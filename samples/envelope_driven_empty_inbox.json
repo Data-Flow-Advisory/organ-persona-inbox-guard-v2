@@ -1,0 +1,16 @@
+{
+  "name": "envelope_driven_empty_inbox",
+  "description": "Researcher persona awaiting envelopes; nothing delegated, no pending action -> skip the standing-directive heartbeat (the case that saves the empty-inbox claude -p fire).",
+  "state": {
+    "persona_config": {
+      "role_id": "researcher",
+      "expertise": ["market research", "competitive analysis"]
+    },
+    "has_delegated_work": false,
+    "has_pending_action": false
+  },
+  "expect": {
+    "output": true,
+    "rationale_contains": "skip heartbeat"
+  }
+}

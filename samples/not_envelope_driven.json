@@ -1,0 +1,15 @@
+{
+  "name": "not_envelope_driven",
+  "description": "A persona whose role is not envelope-driven and carries no explicit inbox_envelope_action_types -> the seeder's normal heartbeat applies (never skipped by this organ).",
+  "state": {
+    "persona_config": {
+      "role_id": "analyst"
+    },
+    "has_delegated_work": false,
+    "has_pending_action": false
+  },
+  "expect": {
+    "output": false,
+    "rationale_contains": "Not an envelope-driven"
+  }
+}

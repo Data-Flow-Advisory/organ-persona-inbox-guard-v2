@@ -1,0 +1,74 @@
+name: Organ Conformance
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  conformance:
+    name: Test Organ Contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: python -m pip install --quiet pytest
+
+      - name: Run organ tests
+        run: python -m pytest test_organ.py -v
+
+      - name: Verify organ contract (decide signature + shape)
+        run: |
+          python3 << 'PYEOF'
+          import sys
+          from organ import decide
+
+          # The contract: decide(state, context?) -> {output, rationale, self_metric{confidence}}
+          # context must be optional.
+          result = decide({
+              "persona_config": {"role_id": "researcher"},
+              "has_delegated_work": False,
+              "has_pending_action": False,
+          })
+
+          assert isinstance(result, dict), "decide() must return a dict"
+          for key in ("output", "rationale", "self_metric"):
+              assert key in result, f"result must contain {key!r}"
+          assert isinstance(result["output"], bool), "output must be bool"
+          assert isinstance(result["rationale"], str) and result["rationale"], "rationale must be a non-empty str"
+          sm = result["self_metric"]
+          assert isinstance(sm, dict), "self_metric must be a dict"
+          assert "confidence" in sm, "self_metric must contain 'confidence'"
+          c = sm["confidence"]
+          assert isinstance(c, (int, float)), "confidence must be numeric"
+          assert 0.0 <= c <= 1.0, "confidence must be in [0.0, 1.0]"
+
+          # Fail-safe: malformed state must NOT yield a confident "skip".
+          fs = decide(None)
+          assert fs["output"] is False, "malformed state must be conservative (run heartbeat)"
+
+          # Determinism.
+          s = {"persona_config": {"role_id": "researcher"}, "has_delegated_work": False, "has_pending_action": False}
+          assert decide(dict(s)) == decide(dict(s)), "decide() must be deterministic"
+
+          print("✓ Organ contract verified")
+          sys.exit(0)
+          PYEOF
+
+      - name: Shadow-run every committed sample through the CLI entrypoint
+        run: |
+          set -euo pipefail
+          echo "# Organ shadow runs" >> "$GITHUB_STEP_SUMMARY"
+          for s in samples/*.json; do
+            echo "## $(basename "$s")" >> "$GITHUB_STEP_SUMMARY"
+            out="$(ORGAN_INPUT="$s" python3 organ.py)"
+            printf '```json\n%s\n```\n' "$out" >> "$GITHUB_STEP_SUMMARY"
+          done

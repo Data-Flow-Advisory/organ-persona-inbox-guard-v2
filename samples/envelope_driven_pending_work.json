@@ -1,0 +1,15 @@
+{
+  "name": "envelope_driven_pending_work",
+  "description": "Researcher persona with a pending/claimed delegated work item -> run the heartbeat immediately so the delegated work is picked up.",
+  "state": {
+    "persona_config": {
+      "role_id": "researcher"
+    },
+    "has_delegated_work": true,
+    "has_pending_action": false
+  },
+  "expect": {
+    "output": false,
+    "rationale_contains": "delegated work"
+  }
+}
